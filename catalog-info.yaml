@@ -1,0 +1,71 @@
+#
+# COPYRIGHT Ericsson 2024
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: eric-oss-pm-stats-calc-handling
+  title: PM Stats Calculation Handling
+  description: 'PM Stats Calculation Handling is the application responsible for calculating and exposing KPIs, with the KPIs themselves defined using models.'
+  annotations:
+    backstage.io/source-location: url:https://gerrit-gamma.gic.ericsson.se/plugins/gitiles/OSS/com.ericsson.oss.air/eric-oss-pm-stats-calc-handling
+    backstage.io/kubernetes-label-selector: 'app.kubernetes.io/name=eric-oss-pm-stats-calc-handling'
+    gerrit/component: OSS/com.ericsson.oss.air/eric-oss-pm-stats-calc-handling
+    jira.com/project-keys: IDUN
+    jira.com/filter-ids: "224815"
+    jenkins:
+      fem8s11-eiffel052.eiffel.gic.ericsson.se:8443/eric-oss-adc-PCR-From-Review
+  links:
+    - url: https://oss-architecture.seli.wh.rnd.internal.ericsson.com/domains/planned/assurance-insights-and-reporting/pm-stats-calculation-handling.html
+      title: Network Management Portfolio Architecture - PM Stats Calculation Handling
+      icon: docs
+    - url: https://eteamspace.internal.ericsson.com/display/IDUN/Team+Bragi
+      title: Team Bragi Confluence
+      icon: dashboard
+  roles:
+    l2-design-owner: egabnyi
+    product-owner: ekladne
+    application-architect: ESZBZLT
+  approval:
+    date: 03-03-2024
+    approver: ekladne
+spec:
+  domain: asssurance-insights-and-reporting
+  owner: bragi-team
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: eric-pm-kpi-data
+  title: PM KPI Data DB
+  description: 'PG Database for PM Stats Calculation Handling'
+  # approval:
+  #   date: 02-05-2024
+  #   approver: <signum of reviewer>
+  links:
+    - url: https://adp.ericsson.se/marketplace/document-database-pg
+      title: ADP Marketplace
+      icon: dashboard
+  tags:
+    - ericsson-intelligent-controller
+spec:
+  lifecycle: production
+  owner: velociraptors
+  system: eric-oss-pm-stats-calc-handling
+  type: database
+  dependsOn:
+    - component:eric-data-document-database-pg

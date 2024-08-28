@@ -1,0 +1,21 @@
+{{- if .Values.global.networkPolicy.enabled -}}
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-spark-worker-pm-allow
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app: eric-pm-kpi-spark-cluster-worker
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: eric-pm-server
+  policyTypes:
+  - Ingress
+{{- end }}

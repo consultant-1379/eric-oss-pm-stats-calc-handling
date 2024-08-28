@@ -1,0 +1,29 @@
+{{- $serviceMesh := include "eric-oss-pm-stats-calc-handling.service-mesh-enabled" . | trim -}}
+{{- $tls := include "eric-oss-pm-stats-calc-handling.global-security-tls-enabled" . | trim -}}
+{{- if and (eq $serviceMesh "true") (eq $tls "true") -}}
+
+{{- $queryDb := ".Values.eric-oss-pm-stats-exporter.eric-pm-kpi-data.enabled" }}
+{{- $exporterDb := ".Values.eric-oss-pm-stats-query-service.query.database.enabled" }}
+{{- if or $queryDb $exporterDb }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ro-eric-pm-kpi-data
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  ipFamilies:
+  - IPv4
+  ports:
+  - name: postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: 5432
+  type: ClusterIP
+  selector:
+    app: eric-pm-kpi-data
+    role: master
+{{- end }}
+{{- end }}

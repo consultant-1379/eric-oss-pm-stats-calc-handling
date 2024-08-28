@@ -1,0 +1,595 @@
+#
+# COPYRIGHT Ericsson 2023
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+# Default values for eric-oss-pm-stats-calc-handling.
+global:
+  networkPolicy:
+    enabled: true
+  registry:
+    url: "armdocker.rnd.ericsson.se"
+    imagePullPolicy: IfNotPresent
+  pullSecret: "k8s-registry-secret"
+  security:
+    tls:
+      enabled: false
+  serviceMesh:
+    enabled: false
+    ingress:
+      enabled: false
+    revision: "a"
+  support:
+    ipv6:
+      enabled: false
+  timezone: UTC
+  hosts:
+    gas: "gas.ericsson.com"
+    iam: "iam.ericsson.com"
+    eic: "eic.ericsson.com"
+  iam:
+    clientId: eo
+    adminSecret: eric-sec-access-mgmt-creds
+    userKey: kcadminid
+    passwordKey: kcpasswd
+    cacert:
+      secretName: iam-cacert-secret
+      key: tls.crt
+      filePath: iam/ca.crt
+  log:
+    streamingMethod: "indirect"
+  logShipper:
+    deployment:
+      type: "sidecar"
+
+pullSecret: "k8s-registry-secret"
+
+iam:
+  cacert:
+    secretName: iam-cacert-secret
+    key: tls.crt
+    filePath: iam/ca.crt
+
+labels: {}
+
+serviceAccount:
+  name: ""
+
+annotation: {}
+
+tolerations: []
+
+terminationGracePeriodSeconds: 60
+
+imageCredentials:
+  pullSecret: "k8s-registry-secret"
+
+eric-oss-pm-stats-calculator:
+  kafka:
+    hostname: eric-oss-dmm-kf-op-sz-kafka-bootstrap
+    bucketSize: "3000000"
+  schemaRegistry:
+    url: eric-schema-registry-sr
+    port: 8081
+  kpiExecutionPeriod: "0 0/5 * ? * * *"
+  spark:
+    enabled: true
+    driver:
+      memory: 3g
+    executor:
+      memory: 3500m
+      cores: 6
+      onDemand:
+        memory: 3500m
+        cores: 6
+    max:
+      cores: 18
+    parallelism: 18
+    shufflePartitions: 18
+    partitionTableRead: true
+    indexedNumericPartitionColumns: "aggregation_begin_time"
+  brAgent:
+    enabled: true
+    backupTypeList:
+      - "PLATFORM"
+    logicalDBBackupEnable: false
+  kpiData:
+    nameOverride: eric-pm-kpi-data
+    brAgent:
+      enabled: false
+      storage:
+        size: 22Gi
+      backupTypeList:
+      - "PLATFORM"
+      logicalDBBackupEnable: false
+    persistentVolumeClaim:
+      enabled: true
+      size: 300Gi
+    postgresConfig:
+      log_min_duration_statement: 250
+      log_statement: none
+      logging_collector: "on"
+      max_connections: 200
+      effective_cache_size: "7GB"
+      shared_buffers: "3GB"
+      min_wal_size: "500MB"
+      max_wal_size: "2GB"
+      work_mem: "64MB"
+      wal_buffers: "16MB"
+      maintenance_work_mem: "512MB"
+      checkpoint_completion_target: 0.7
+    restore:
+      enabled: false
+    resources:
+      postgres:
+        limits:
+          cpu: 9200m
+          memory: 12Gi
+        requests:
+          cpu: 4500m
+          memory: 12Gi
+    postgresPassword: 4YUwpduAVz7m
+    postgresSuperPassword: 4YUwpduAVz7m
+    metricsPwd: 4YUwpduAVz7m
+    replicaPwd: 4YUwpduAVz7m
+  osm2ism:
+    enabled: false # Requires service mesh to be enabled
+    outMeshServices:
+      csac:
+        enabled: false
+        name: ""
+        intermediateCA:
+          enabled: false
+          name: ""
+  resources:
+    calculator:
+      limits:
+        cpu: 4500m
+        memory: 6Gi
+      requests:
+        cpu: 1600m
+        memory: 6Gi
+  maxHeartbeatToWaitToRecalculateSimples: 5
+  retentionPeriod:
+    days: "15"
+  dst:
+    enabled: true
+
+eric-oss-pm-stats-exporter:
+  kafka:
+    enabled: true
+    brokerAddress: "eric-oss-dmm-kf-op-sz-kafka-bootstrap"
+    completedTimestamp:
+      topicName: "pm-stats-exporter-json-completed-timestamp"
+      partitions: 4
+      replicationFactor: 3
+  eric-pm-kpi-data:
+    enabled: true
+    nameOverride: eric-pm-kpi-data
+  dmm:
+    enabled: true
+    dataCatalog:
+      nameOverride: eric-oss-data-catalog
+      service:
+        port: 9590
+  replicaCount: 4
+  resources:
+    eric-oss-pm-stats-exporter:
+      requests:
+        memory: "1500Mi"
+        cpu: "300m"
+        ephemeral-storage: 1Gi
+      limits:
+        memory: "3Gi"
+        cpu: "1000m"
+        ephemeral-storage: 2Gi
+  dst:
+    enabled: true
+
+eric-oss-pm-stats-query-service:
+  query:
+    database:
+      enabled: true
+      url: "jdbc:postgresql://eric-pm-kpi-data:5432/kpi_service_db"
+    kafka:
+      url: eric-oss-dmm-kf-op-sz-kafka-bootstrap:9092
+      enabled: true
+    credentials:
+      kubernetesSecretName: "eric-oss-pm-stats-calculator-kpi-data"
+      keyForUserId: "username"
+      keyForUserPw: "password"
+      database:
+        username: "username"
+        password: "password"
+  osm2ism:
+    enabled: false
+    outMeshServices:
+      cnom:
+        enabled: false
+        name: ""
+        intermediateCA:
+          enabled: false
+          name: ""
+  resources:
+    eric-oss-pm-stats-query-service:
+      requests:
+        memory: "2500Mi"
+        cpu: 1
+        ephemeral-storage: ""
+      limits:
+        memory: "2500Mi"
+        cpu: "1500m"
+        ephemeral-storage: ""
+  dst:
+    enabled: true
+
+images:
+  eric-api-gateway-client: {}
+
+resources:
+  eric-api-gateway-client:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  exposure-api-manager-client:
+    limits:
+      cpu: "300m"
+      memory: "300Mi"
+      ephemeral-storage: "100Mi"
+    requests:
+      cpu: "100m"
+      memory: "50Mi"
+      ephemeral-storage: "50Mi"
+    jvm:
+      initialMemoryAllocationPercentage: 50
+      smallMemoryAllocationMaxPercentage: 50
+      largeMemoryAllocationMaxPercentage: 70
+
+rbac:
+  enabled: true
+sef:
+  enabled: false
+
+serviceMesh:
+  enabled: true
+
+apiGatewayRoute:
+  enabled: true
+  credentials:
+    name: eric-oss-common-base-system-user-secret
+    userKey: system-user
+    pwdKey: system-user-pwd
+  client:
+    pullPolicy: IfNotPresent
+
+apiGWRouteCalculator:
+  enabled: true
+  client:
+    pullPolicy: IfNotPresent
+  routePath:
+    serviceName: http://eric-oss-pm-stats-calculator:8080
+    routeId: calculator
+    tag: -i
+    paths:
+      Calculation: /kpi-handling/calc/v1/calculations/**
+      Definition: /kpi-handling/model/v1/definitions/**
+
+apiGWRouteQueryService:
+  enabled: true
+  client:
+    pullPolicy: IfNotPresent
+  routePath:
+    serviceName: http://eric-oss-pm-stats-query-service:8080
+    routeId: queryservice
+    tag: -i
+    path:
+      Exposure: /kpi-handling/exposure/v1/**
+
+onboardingAPIs:
+  - serviceCapabilityId: calculations-route
+    apiName: calculations
+    status: active
+    apiVersion: v1
+    apiCategory: /APIGM/category/calculations
+    apiDefinition:
+      - operationName: calculations/GETALL
+        urlPattern: /kpi-handling/calc/v1/calculations
+        urlPatternType: uriRegex
+        method: GET
+      - operationName: calculations/GET
+        urlPattern: /kpi-handling/calc/v1/calculations/(.*)
+        urlPatternType: uriRegex
+        method: GET
+      - operationName: calculation/POSTALL
+        urlPattern: /kpi-handling/calc/v1/calculations
+        urlPatternType: uriRegex
+        method: POST
+      - operationName: calculation/POST
+        urlPattern: /kpi-handling/calc/v1/calculations/(.*)
+        urlPatternType: uriRegex
+        method: POST
+    throttlingThreshold: 100
+    endpoints:
+      - endpointId: calculations-endpoint
+        endpointUrl: eric-oss-pm-stats-calculator:8080
+        endpointTlsUrl: eric-oss-pm-stats-calculator:8080
+    accessControl:
+      authentication:
+        scheme: auto
+    interceptor:
+      - extractTokenInterceptor
+      - requestPartyTokenInterceptor
+    data:
+       configuration:
+           defaultResourceServer: eo
+           enableTokenPropagation: true
+           tokenHeaderName: "Authorization"
+  - serviceCapabilityId: definitions-route
+    apiName: definitions
+    status: active
+    apiVersion: v1
+    apiCategory: /APIGM/category/definitions
+    apiDefinition:
+      - operationName: definitions/GETALL
+        urlPattern: /kpi-handling/model/v1/definitions
+        urlPatternType: uriRegex
+        method: GET
+      - operationName: definitions/GET
+        urlPattern: /kpi-handling/model/v1/definitions/(.*)
+        urlPatternType: uriRegex
+        method: GET
+      - operationName: definitions/POSTALL
+        urlPattern: /kpi-handling/model/v1/definitions
+        urlPatternType: uriRegex
+        method: POST
+      - operationName: definitions/POST
+        urlPattern: /kpi-handling/model/v1/definitions/(.*)
+        urlPatternType: uriRegex
+        method: POST
+      - operationName: definitions/PATCHALL
+        urlPattern: /kpi-handling/model/v1/definitions
+        urlPatternType: uriRegex
+        method: PATCH
+      - operationName: definitions/PATCH
+        urlPattern: /kpi-handling/model/v1/definitions/(.*)
+        urlPatternType: uriRegex
+        method: PATCH
+      - operationName: definitions/DELETEALL
+        urlPattern: /kpi-handling/model/v1/definitions
+        urlPatternType: uriRegex
+        method: DELETE
+      - operationName: definitions/DELETE
+        urlPattern: /kpi-handling/model/v1/definitions/(.*)
+        urlPatternType: uriRegex
+        method: DELETE
+    throttlingThreshold: 100
+    endpoints:
+      - endpointId: definitions-endpoint
+        endpointUrl: eric-oss-pm-stats-calculator:8080
+        endpointTlsUrl: eric-oss-pm-stats-calculator:8080
+    accessControl:
+      authentication:
+        scheme: auto
+    interceptor:
+      - extractTokenInterceptor
+      - requestPartyTokenInterceptor
+    data:
+       configuration:
+           defaultResourceServer: eo
+           enableTokenPropagation: true
+           tokenHeaderName: "Authorization"
+  - serviceCapabilityId: queryservice-route
+    apiName: exposure
+    status: active
+    apiVersion: v1
+    apiCategory: /APIGM/category/exposure
+    apiDefinition:
+      - operationName: exposure/GET
+        urlPattern: /kpi-handling/exposure/v1
+        urlPatternType: uriRegex
+        method: GET
+      - operationName: exposure/GETALL
+        urlPattern: /kpi-handling/exposure/v1/(.*)
+        urlPatternType: uriRegex
+        method: GET
+    throttlingThreshold: 100
+    endpoints:
+      - endpointId: exposure-endpoint
+        endpointUrl: eric-oss-pm-stats-query-service:8080
+        endpointTlsUrl: eric-oss-pm-stats-query-service:8080
+    accessControl:
+      authentication:
+          scheme: auto
+    interceptor:
+      - extractTokenInterceptor
+      - requestPartyTokenInterceptor
+    data:
+       configuration:
+           defaultResourceServer: eo
+           enableTokenPropagation: true
+           tokenHeaderName: "Authorization"
+
+spark:
+  nameOverride: eric-pm-kpi-spark-cluster
+  environmentOverrides:
+    SPARK_WORKER_CORES: 6
+    SPARK_WORKER_MEMORY: 4500m
+    SPARK_NO_DAEMONIZE: true
+    SPARK_WORKER_OPTS: >-
+      -Dspark.worker.cleanup.enabled=true
+      -Dspark.worker.cleanup.interval=900
+      -Dspark.worker.cleanup.appDataTtl=14400
+      -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.local.only=false
+      -Dcom.sun.management.jmxremote.port=10003
+      -Dcom.sun.management.jmxremote.rmi.port=10003
+      -Dcom.sun.management.jmxremote.ssl=false
+      -Dcom.sun.management.jmxremote.authenticate=false
+      -Djava.rmi.server.hostname=0.0.0.0
+      -Dlog4j.configuration=file:///opt/spark/conf/log4j.properties
+      -Dlog.level=INFO
+  resources:
+    master:
+      requests:
+        cpu: 2
+        memory: 5Gi
+      limits:
+        cpu: 6
+        memory: 5Gi
+    worker:
+      requests:
+        cpu: 2
+        memory: 4500Mi
+      limits:
+        cpu: 7
+        memory: 5Gi
+  replicaCount:
+    worker: 6
+  cnom:
+    enabled: true
+    dashboard:
+      tree:
+        useMetrics:
+          - PM Stats Calculation Handling
+          - PM Stats Calculator
+          - USE metrics
+  jmx:
+    enabled: true
+  jmxMasterWorker:
+    servicePort: 21003
+    rules: "custom"
+    custom.yml: |
+      startDelaySeconds: 0
+      lowercaseOutputName: true
+      lowercaseOutputLabelNames: true
+      rules:
+        - pattern: 'java.lang<type=Memory><HeapMemoryUsage>used'
+          name: java_lang_memory_heapmemoryusage_used
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=Memory><HeapMemoryUsage>committed'
+          name: java_lang_memory_heapmemoryusage_committed
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>used'
+          name: java_lang_memory_nonheapmemoryusage_used
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=Memory><NonHeapMemoryUsage>committed'
+          name: java_lang_memory_nonheapmemoryusage_committed
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=Threading><>ThreadCount'
+          name: java_lang_threading_threadcount
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=Threading><>PeakThreadCount'
+          name: java_lang_threading_peakthreadcount
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=GarbageCollector,name=PS MarkSweep><>CollectionTime'
+          name: java_lang_garbagecollector_collectiontime{name="PS MarkSweep",}
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=GarbageCollector,name=PS Scavenge><>CollectionTime'
+          name: java_lang_garbagecollector_collectiontime{name="PS Scavenge",}
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=OperatingSystem><>ProcessCpuTime'
+          name: java_lang_operatingsystem_processcputime
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: 'java.lang<type=OperatingSystem><>OpenFileDescriptorCount'
+          name: java_lang_operatingsystem_openfiledescriptorcount
+          labels:
+            jvm_name: "spark-worker"
+        - pattern: .*
+  jmxExecutor:
+    servicePort: 21002
+    rules: "custom"
+    custom.yml: |
+      startDelaySeconds: 0
+      lowercaseOutputName: true
+      lowercaseOutputLabelNames: true
+      rules:
+        - pattern: "metrics<name=(.*)\\.(.*)\\.executor\\.(.*)><>Value"
+          name: spark_executor_$3
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.executor\\.(.*)><>Count"
+          name: spark_executor_$3
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.heap.used><>Value"
+          name: java_lang_memory_heapmemoryusage_used
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.heap.committed><>Value"
+          name: java_lang_memory_heapmemoryusage_committed
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.non-heap.used><>Value"
+          name: java_lang_memory_nonheapmemoryusage_used
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.non-heap.committed><>Value"
+          name: java_lang_memory_nonheapmemoryusage_committed
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.PS-MarkSweep.time><>Value"
+          name: java_lang_garbagecollector_collectiontime
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS MarkSweep"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.PS-Scavenge.time><>Value"
+          name: java_lang_garbagecollector_collectiontime
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS Scavenge"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.PS-MarkSweep.count><>Value"
+          name: java_lang_garbagecollector_collectioncount
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS MarkSweep"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.PS-Scavenge.count><>Value"
+          name: java_lang_garbagecollector_collectioncount
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS Scavenge"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.pools.PS-Eden-Space.usage><>Value"
+          name: java_lang_memorypool_usage_used
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS Eden Space"
+        - pattern: "metrics<name=(.*)\\.(.*)\\.jvm.pools.PS-Old-Gen.usage><>Value"
+          name: java_lang_memorypool_usage_used
+          labels:
+            jvm_name: $1-executor-jvm-$2
+            executor_id: "$2"
+            name: "PS Old Gen"
+        - pattern: .*
+  terminationGracePeriodSeconds: 0

@@ -1,0 +1,40 @@
+{{- $serviceMesh := include "eric-oss-pm-stats-calc-handling.service-mesh-enabled" . | trim -}}
+{{- $tls := include "eric-oss-pm-stats-calc-handling.global-security-tls-enabled" . | trim -}}
+{{- $osm2ism := include "eric-oss-pm-stats-calc-handling.pmsc-osm2ism-enabled" . | trim -}}
+{{- $namespace := printf "%s" .Release.Namespace -}}
+{{- if and (eq $serviceMesh "true") (eq $tls "true") -}}
+
+#
+# COPYRIGHT Ericsson 2024
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-calculator-peer-authentication-for-sidecar
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: eric-oss-pm-stats-calculator
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    9080:
+      mode: DISABLE
+{{- end }}

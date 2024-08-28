@@ -1,0 +1,36 @@
+apiVersion: v2
+dependencies:
+- name: eric-oss-pm-stats-exporter
+  repository: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-oss-drop-helm-local
+  version: 1.242.0-2
+- name: eric-oss-pm-stats-calculator
+  repository: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-oss-released-helm-local
+  version: 1.590.0-1
+- name: eric-oss-pm-stats-query-service
+  repository: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-oss-drop-helm-local
+  version: 1.128.0-1
+- alias: spark
+  condition: spark.enabled
+  name: eric-data-engine-sk
+  repository: https://arm.seli.gic.ericsson.se/artifactory/proj-eric-oss-released-helm-local
+  version: 1.2.0-93
+- condition: eric-log-shipper.enabled
+  import-values:
+  - child: logShipper.config
+    parent: global.logShipper.config
+  name: eric-log-shipper
+  repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+  version: 19.4.0-14
+- condition: eric-sef-exposure-api-manager-client.enabled
+  import-values:
+  - child: exposureApiManagerClient.config
+    parent: global.exposureApiManagerClient.config
+  name: eric-sef-exposure-api-manager-client
+  repository: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-eric-sef-exposure-api-manager-released-helm/
+  version: 3.6.0+153
+description: Chart containing OSS PM Statistics Calculation Handling Microservices
+maintainers:
+- email: email@email.com
+  name: team_name
+name: eric-oss-pm-stats-calc-handling
+version: 0.929.0

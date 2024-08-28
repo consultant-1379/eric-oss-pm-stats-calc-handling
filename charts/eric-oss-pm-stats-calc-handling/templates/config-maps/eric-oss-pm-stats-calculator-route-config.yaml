@@ -1,0 +1,83 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{- if index (.Values) "apiGWRouteCalculator" "enabled"}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-calculator-route
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+data:
+  route.json: |
+    {
+        "id": "{{ index .Values.apiGWRouteCalculator.routePath.routeId }}",
+        "predicates": [
+            {
+                "name": "Path",
+                "args": {
+                    "_genkey_0": "{{ index .Values "apiGWRouteCalculator" "routePath" "paths" "Calculation" }}",
+                    "_genkey_1": "{{ index .Values "apiGWRouteCalculator" "routePath" "paths" "Definition" }}"
+                }
+            },
+            {
+                "name": "Host",
+                "args": {
+                    "_genkey_0": "{{ index .Values "global" "hosts" "gas" }}"
+                }
+            }
+        ],
+        "filters": [
+        {
+            "name": "AddRequestHeader",
+            "args": {
+                "_genkey_0": "X-RateLimit-Map-Name",
+                "_genkey_1": "so-rate-limiter"
+            }
+        },
+        {
+            "name": "AddRequestHeader",
+            "args": {
+                "_genkey_0": "X-RateLimit-Max-Access",
+                "_genkey_1": "1000"
+            }
+        },
+        {
+            "name": "AddRequestHeader",
+            "args": {
+                "_genkey_0": "X-RateLimit-Reset-Time",
+                "_genkey_1": "15"
+            }
+        },
+        {
+            "name": "RateLimitFilter",
+            "args": {}
+        },
+        {
+            "name": "AddUserNameCookieFilter",
+            "args": {}
+        },
+        {
+            "name": "AddTokenHeaderFilter",
+            "args": {}
+        }
+    ],
+        "uri": "{{ index .Values "apiGWRouteCalculator" "routePath" "serviceName" }}",
+        "order": 0
+    }
+{{- end }}

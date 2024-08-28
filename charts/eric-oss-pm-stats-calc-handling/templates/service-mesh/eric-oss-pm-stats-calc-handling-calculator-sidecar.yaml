@@ -1,0 +1,58 @@
+{{- $serviceMesh := include "eric-oss-pm-stats-calc-handling.service-mesh-enabled" . | trim -}}
+{{- $tls := include "eric-oss-pm-stats-calc-handling.global-security-tls-enabled" . | trim -}}
+{{- $osm2ism := include "eric-oss-pm-stats-calc-handling.pmsc-osm2ism-enabled" . | trim -}}
+{{- $osmServiceCSAC := include "eric-oss-pm-stats-calc-handling.pmsc-osmService-csac-enabled" . | trim -}}
+{{- $intermediateCsacCA := include "eric-oss-pm-stats-calc-handling.osmService-csac-issuerRef-enabled" . | trim -}}
+{{- if and (eq $serviceMesh "true") (eq $tls "true") (eq $osm2ism "true") }}
+
+#
+# COPYRIGHT Ericsson 2024
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-calculator-sidecar
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  workloadSelector:
+    labels:
+      app.kubernetes.io/name: eric-oss-pm-stats-calculator
+  ingress:
+  - port:
+      number: 9081
+      protocol: HTTP
+      name: internal
+    defaultEndpoint: 0.0.0.0:8080
+  {{- if (eq $osmServiceCSAC "true") }}
+  - port:
+      number: 9080
+      protocol: HTTPS
+      name: external
+    defaultEndpoint: 0.0.0.0:8080
+    tls:
+      mode: MUTUAL
+      privateKey: "/etc/istio/tls/{{ include "eric-oss-pm-stats-calc-handling.pmsc-osmService-csac-name" . }}/key.pem"
+      serverCertificate: "/etc/istio/tls/{{ include "eric-oss-pm-stats-calc-handling.pmsc-osmService-csac-name" . }}/cert.pem"
+      {{- if (eq $intermediateCsacCA "true") }}
+      caCertificates: "/etc/istio/tls/{{ include "eric-oss-pm-stats-calc-handling.osmService-csac-issuerRef" . }}/ca.pem"
+      {{- else }}
+      caCertificates: "/etc/istio/tls-ca/cacertbundle.pem"
+      {{- end }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,51 @@
+global: {{ .Values | get "global" | toYaml | nindent 2 }}
+{{ if hasKey .Values .Release.Name }}
+{{ .Values | get .Release.Name | toYaml }}
+{{ end }}
+
+eric-oss-pm-stats-exporter:
+  {{ if hasKey .Values .Release.Namespace }}
+  dmm:
+    dataCatalog:
+      nameSpace: {{ .Release.Namespace }}
+  {{ end }}
+  {{ if .Values.global.serviceMesh.enabled }}
+  {{ if .Values.global.security.tls.enabled }}
+  labels:
+      service-istio-secure: "true"
+  {{ end }}
+  {{ end }}
+
+{{ if .Values.global.serviceMesh.enabled }}
+{{ if .Values.global.security.tls.enabled }}
+eric-oss-pm-stats-query-service:
+  labels:
+    service-istio-secure: "true"
+eric-oss-pm-stats-calculator:
+  labels:
+    service-istio-secure: "true"
+spark:
+  labels:
+    service-istio-secure: "true"
+{{ end }}
+{{ end }}
+
+{{- if .Values | get "tags.sef" }}
+sef:
+  enabled: true
+{{ if .Values.global.serviceMesh.enabled }}
+serviceMesh:
+  enabled: true
+{{ end }}
+{{- end }}
+{{ if .Values.global.security.tls.enabled }}
+eric-oss-pm-stats-query-service:
+  query:
+    database:
+      url: "jdbc:postgresql://ro-eric-pm-kpi-data:5432/kpi_service_db"
+{{ else }}
+eric-oss-pm-stats-query-service:
+  query:
+    database:
+      url: "jdbc:postgresql://eric-pm-kpi-data:5432/kpi_service_db"
+{{ end }}

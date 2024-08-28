@@ -1,0 +1,98 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{- if index .Values "rbac" "enabled" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-rbac-pmsch-config-create-hook
+  labels:
+    {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "post-install, post-upgrade, post-rollback"
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": "hook-succeeded, before-hook-creation"
+    {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels:
+      {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 8 }}
+      annotations:
+      {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 8 }}
+    spec:
+      serviceAccountName:  {{ include "eric-oss-pm-stats-calc-handling.name" . }}-sa
+      {{- if include "eric-oss-pm-stats-calc-handling.pullSecrets" . }}
+      imagePullSecrets:
+        - name: {{ include "eric-oss-pm-stats-calc-handling.pullSecrets" . }}
+      {{- end }}
+      restartPolicy: Never
+      {{ include "eric-oss-pm-stats-calc-handling.nodeSelector" . }}
+      {{- if or .Values.tolerations (and .Values.global .Values.global.tolerations) }}
+      tolerations:
+      {{- include "eric-oss-pm-stats-calc-handling.tolerations" . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: keycloak-client
+          image: {{ template "eric-oss-pm-stats-calc-handling.imagePath" (dict "imageId" "keycloakClient" "values" .Values "files" .Files) }}
+          imagePullPolicy: {{ .Values.global.registry.imagePullPolicy }}
+          securityContext:
+            privileged: false
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 174023
+            capabilities:
+              drop:
+              - all
+          env:
+            - name: IAM_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.iam.adminSecret | quote }}
+                  key: {{ .Values.global.iam.userKey | quote }}
+            - name: IAM_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.iam.adminSecret | quote }}
+                  key: {{ .Values.global.iam.passwordKey | quote }}
+          args:
+            - "create"
+            - "authz"
+            - "--keycloak_hostname={{ .Values.global.hosts.iam }}"
+            - "--keycloak_user=$(IAM_ADMIN_USER)"
+            - "--keycloak_password=$(IAM_ADMIN_PASSWORD)"
+            - "--client_name={{ .Values.global.iam.clientId }}"
+            - "--provider={{ .Chart.Name }}"
+            - "--config=/config/rbac-configuration.json"
+          volumeMounts:
+            - name: create-rbac-configuration-volume
+              mountPath: /config
+            - name: create-cacert-volume
+              mountPath: /mnt/certs
+      volumes:
+      - name: create-rbac-configuration-volume
+        configMap:
+          name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-rbac-pmsch
+          defaultMode: 0777
+      - name: create-cacert-volume
+        secret:
+          secretName: {{ .Values.iam.cacert.secretName }}
+          items:
+            - key: {{ .Values.iam.cacert.key }}
+              path: {{ .Values.iam.cacert.filePath }}
+{{- end }}

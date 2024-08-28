@@ -1,0 +1,43 @@
+{{- $serviceMesh := include "eric-oss-pm-stats-calc-handling.service-mesh-enabled" . | trim -}}
+{{- $tls := include "eric-oss-pm-stats-calc-handling.global-security-tls-enabled" . | trim -}}
+{{- if and (eq $serviceMesh "true") (eq $tls "true") -}}
+
+#
+# COPYRIGHT Ericsson 2023
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-eric-pm-kpi-data-pgs-destrule
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  host: service-eric-pm-kpi-data
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: 5432
+        tls:
+          mode: MUTUAL
+          clientCertificate: /etc/istio/tls/pg-postgres/clicert.pem
+          privateKey: /etc/istio/tls/pg-postgres/cliprivkey.pem
+          caCertificates: /etc/istio/tls-ca/cacertbundle.pem
+  workloadSelector:
+    matchLabels:
+      eric-pm-kpi-data-service-ism-access: "true"
+  {{- end }}

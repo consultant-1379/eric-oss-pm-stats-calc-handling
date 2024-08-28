@@ -1,0 +1,11 @@
+global:
+  hosts:
+    gas: ""
+    iam: ""
+  registry:
+    url: ""
+  support:
+    ipv6:
+      enabled: false
+  timezone: UTC
+  createClusterRoles: true

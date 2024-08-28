@@ -1,0 +1,60 @@
+{{- $serviceMesh := include "eric-oss-pm-stats-calc-handling.service-mesh-enabled" . | trim -}}
+{{- $tls := include "eric-oss-pm-stats-calc-handling.global-security-tls-enabled" . | trim -}}
+{{- if and (eq $serviceMesh "true") (eq $tls "true") -}}
+{{- if empty (lookup "networking.istio.io/v1beta1" "DestinationRule" .Release.Namespace "eric-oss-common-base-appmngr-eric-dst-collector-destinationrule")}}
+#
+# COPYRIGHT Ericsson 2024
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-dst-destinationrule
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  exportTo:
+  - .
+  host: eric-dst-collector
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 4318
+      tls:
+        mode: MUTUAL
+        caCertificates: /etc/istio/tls-ca/ca.crt
+        clientCertificate: /etc/istio/tls/eric-dst-collector/cert.pem
+        privateKey: /etc/istio/tls/eric-dst-collector/key.pem
+    - port:
+        number: 4317
+      tls:
+        mode: MUTUAL
+        caCertificates: /etc/istio/tls-ca/ca.crt
+        clientCertificate: /etc/istio/tls/eric-dst-collector/cert.pem
+        privateKey: /etc/istio/tls/eric-dst-collector/key.pem
+    - port:
+        number: 14250
+      tls:
+        mode: MUTUAL
+        caCertificates: /etc/istio/tls-ca/ca.crt
+        clientCertificate: /etc/istio/tls/eric-dst-collector/cert.pem
+        privateKey: /etc/istio/tls/eric-dst-collector/key.pem
+  workloadSelector:
+    matchLabels:
+      eric-dst-collector-ism-access: "true"
+{{- end }}
+{{- end }}

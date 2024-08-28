@@ -1,0 +1,18 @@
+global:
+  hosts:
+    iam: "iam.dummy.hostname.com"
+    gas: "gas.dummy.hostname.com"
+  registry:
+    url: "registry.dummy.hostname.com"
+  support:
+    ipv6:
+      enabled: false
+  timezone: UTC
+  pullSecret: "dummy-pull-secret"
+tags:
+  platform: true
+
+  # required by multiple Charts: gas, so, pf, uds
+defaultUser:
+  username: "user"
+  password: "90Keycloak_69"

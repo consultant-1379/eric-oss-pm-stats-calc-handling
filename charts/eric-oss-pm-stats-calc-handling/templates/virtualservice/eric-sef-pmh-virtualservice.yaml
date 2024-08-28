@@ -1,0 +1,51 @@
+{{- if index .Values "sef" "enabled" }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-common-sef-virtualservice
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+spec:
+  exportTo:
+    - "."
+  gateways:
+    - eric-oss-common-base-common-gateway
+  hosts:
+    - {{ required "A valid .Values.global.hosts.eic entry required" .Values.global.hosts.eic }}
+  http:
+  - match:
+    - uri:
+        prefix: /kpi-handling/calc/v1/calculations
+    name: calculations
+    rewrite:
+      uri: /hub/calculations/v1/kpi-handling/calc/v1/calculations
+    route:
+    - destination:
+        host: eric-sef-exposure-api-gateway
+        port:
+          number: 8080
+  - match:
+    - uri:
+        prefix: /kpi-handling/model/v1/definitions
+    name: definitions
+    rewrite:
+      uri: /hub/definitions/v1/kpi-handling/model/v1/definitions
+    route:
+    - destination:
+        host: eric-sef-exposure-api-gateway
+        port:
+          number: 8080
+  - match:
+    - uri:
+        prefix: /kpi-handling/exposure/v1
+    name: exposure
+    rewrite:
+      uri: /hub/exposure/v1/kpi-handling/exposure/v1
+    route:
+    - destination:
+        host: eric-sef-exposure-api-gateway
+        port:
+          number: 8080
+{{- end }}

@@ -1,0 +1,196 @@
+#
+# COPYRIGHT Ericsson 2022
+#
+#
+#
+# The copyright to the computer program(s) herein is the property of
+#
+# Ericsson Inc. The programs may be used and/or copied only with written
+#
+# permission from Ericsson Inc. or in accordance with the terms and
+#
+# conditions stipulated in the agreement/contract under which the
+#
+# program(s) have been supplied.
+#
+
+{{- if (.Values.rbac).enabled }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ template "eric-oss-pm-stats-calc-handling.name" . }}-rbac-pmsch
+  labels:
+  {{- include "eric-oss-pm-stats-calc-handling.kubernetes-io-info" . | nindent 4 }}
+  annotations:
+  {{- include "eric-oss-pm-stats-calc-handling.helm-annotations" . | nindent 4 }}
+data:
+  rbac-configuration.json: |
+    {
+      "roles": [
+        {
+          "name": "PMSCH_Application_Operator",
+          "attributes": {"type": []}
+        },
+        {
+          "name": "PMSCH_Application_ReadOnly",
+          "attributes": {"type": []}
+        }
+      ],
+      "authorization": {
+        "resources": [
+          {
+            "name": "PM Calculator Endpoints",
+            "type": "urn:eo:pmh:resources:calculator",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [
+              "/kpi-handling/calc/v1/calculations**",
+              "/kpi-handling/calc/v1/calculations/**"{{ if .Values.sef.enabled}},
+              "/calculations/v1/kpi-handling/calc/v1/calculations**",
+              "/calculations/v1/kpi-handling/calc/v1/calculations/**"{{ end }}
+            ],
+            "scopes": [
+              {
+                "name": "GET"
+              },
+              {
+                "name": "POST"
+              }
+            ]
+          },
+          {
+            "name": "PM Definition Endpoints",
+            "type": "urn:eo:pmh:resources:definitions",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [
+              "/kpi-handling/model/v1/definitions**",
+              "/kpi-handling/model/v1/definitions/**"{{ if .Values.sef.enabled}},
+              "/definitions/v1/kpi-handling/model/v1/definitions**",
+              "/definitions/v1/kpi-handling/model/v1/definitions/**"{{ end }}
+            ],
+            "scopes": [
+              {
+                "name": "GET"
+              },
+              {
+                "name": "POST"
+              },
+              {
+                "name": "PATCH"
+              },
+              {
+                "name": "DELETE"
+              }
+            ]
+          },
+          {
+            "name": "PM QueryService Endpoints",
+            "type": "urn:eo:pmh:resources:queryservice",
+            "ownerManagedAccess": false,
+            "attributes": {},
+            "uris": [
+              "/kpi-handling/exposure/v1**",
+              "/kpi-handling/exposure/v1/**"{{ if .Values.sef.enabled}},
+              "/exposure/v1/kpi-handling/exposure/v1**",
+              "/exposure/v1/kpi-handling/exposure/v1/**"{{ end }}
+            ],
+            "scopes": [
+              {
+                "name": "GET"
+              }
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "name": "Is PMSCH Application Operator",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"PMSCH_Application_Operator\",\"required\":false}]"
+            }
+          },
+          {
+            "name": "Is PMSCH Application ReadOnly",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\":\"PMSCH_Application_ReadOnly\",\"required\":false}]"
+            }
+          },
+          {
+            "name": "PM Calculator Operator Permission",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"PM Calculator Endpoints\"]",
+              "scopes": "[\"POST\"]",
+              "applyPolicies": "[\"Is PMSCH Application Operator\"]"
+            }
+          },
+          {
+            "name": "PM Calculator ReadOnly Permission",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"PM Calculator Endpoints\"]",
+              "scopes": "[\"GET\"]",
+              "applyPolicies": "[\"Is PMSCH Application Operator\", \"Is PMSCH Application ReadOnly\"]"
+            }
+          },
+          {
+            "name": "PM Definition Operator Permission",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"PM Definition Endpoints\"]",
+              "scopes": "[\"PATCH\" ,\"POST\", \"DELETE\"]",
+              "applyPolicies": "[\"Is PMSCH Application Operator\"]"
+            }
+          },
+          {
+            "name": "PM Definition ReadOnly Permission",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"PM Definition Endpoints\"]",
+              "scopes": "[\"GET\"]",
+              "applyPolicies": "[\"Is PMSCH Application Operator\", \"Is PMSCH Application ReadOnly\"]"
+            }
+          },
+          {
+            "name": "PM QueryService ReadOnly Permission",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"PM QueryService Endpoints\"]",
+              "scopes": "[\"GET\"]",
+              "applyPolicies": "[\"Is PMSCH Application Operator\", \"Is PMSCH Application ReadOnly\"]"
+            }
+          }
+        ],
+        "scopes": [
+          {
+            "name": "GET"
+          },
+          {
+            "name": "POST"
+          },
+          {
+            "name": "DELETE"
+          },
+          {
+            "name": "PATCH"
+          }
+        ]
+      }
+    }
+{{- end }}
